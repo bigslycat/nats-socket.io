@@ -27,9 +27,6 @@ const io = new Server({
 });
 
 io.on('connection', socket => {
-  const subjectPrefix = `web client ${socket.id}`;
-  const subjectPrefixLength = subjectPrefix.length;
-
   const { headers } = socket.request;
 
   const cookies = headers.cookie
@@ -77,10 +74,11 @@ io.on('connection', socket => {
     }
   });
 
-  const personal = nc.subscribe(
-    `${subjectPrefix} *`,
+  const personalSubject = `to client ${socket.id} / *`;
+  const personalMessages = nc.subscribe(
+    personalSubject,
     (payload, replySubject, rawSubject) => {
-      const subject = rawSubject.slice(subjectPrefixLength).trim();
+      const subject = rawSubject.slice(personalSubject.length - 1).trim();
 
       if (replySubject) {
         socket.emit(subject, payload, responsePayload =>
@@ -97,7 +95,7 @@ io.on('connection', socket => {
 
   socket.on('disconnect', () => {
     nc.publish('web client / disconnect', fingerprint);
-    nc.unsubscribe(personal);
+    nc.unsubscribe(personalMessages);
   });
 });
 
