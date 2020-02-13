@@ -1,0 +1,21 @@
+parser: babel-eslint
+
+plugins:
+  - import
+  - prettier
+
+extends:
+  - airbnb-base
+  - prettier
+
+env:
+  node: true
+  browser: false
+
+rules:
+  prettier/prettier:
+    - error
+
+  import/no-mutable-exports: error
+  import/no-default-export: error
+  import/first: error
