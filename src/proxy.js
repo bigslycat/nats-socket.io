@@ -2,21 +2,20 @@ const Server = require('socket.io');
 const NATS = require('nats');
 
 const {
-  NATS_HOST = 'nats',
+  NATS_HOSTNAME = 'localhost',
   NATS_USER,
-  NATS_PASS,
+  NATS_PASSWORD,
   NATS_TOKEN,
   WS_PATH = '/socket.io',
   WS_ORIGINS = '*',
 } = process.env;
 
-const WS_PORT = process.env.WS_PORT ? +process.env.WS_PORT : 80;
 const NATS_PORT = process.env.NATS_PORT ? +process.env.NATS_PORT : 4222;
 
 const nc = NATS.connect({
-  url: `nats://${NATS_HOST}:${NATS_PORT}`,
+  url: `nats://${NATS_HOSTNAME}:${NATS_PORT}`,
   user: NATS_USER,
-  pass: NATS_PASS,
+  pass: NATS_PASSWORD,
   token: NATS_TOKEN,
   json: true,
 });
@@ -27,54 +26,48 @@ const io = new Server({
 });
 
 io.on('connection', socket => {
-  const { headers } = socket.request;
-
-  const cookies = headers.cookie
-    ? headers.cookie.split(';').reduce((acc, entry) => {
-        const [key, value] = entry.trim().split('=');
-        acc[key] = value;
-        return acc;
-      }, {})
-    : {};
-
-  const fingerprint = {
-    headers,
-    cookies,
-    socketId: socket.id,
+  const clientData = {
+    headers: socket.request.headers,
+    cookies: parseCookies(socket.request.headers.cookie),
+    webSocketId: socket.id,
   };
 
-  nc.publish('web client / connect', fingerprint);
+  nc.publish('web client / connected', clientData);
 
-  const failSubject = subject =>
-    nc.publish('web client / invalid subject', {
-      ...fingerprint,
-      givenSubjectType:
-        typeof subject === 'object' && !subject ? 'null' : typeof subject,
+  const sendWrongMessageFormat = (message, reply) => {
+    nc.publish('web client / error', {
+      ...clientData,
+      kind: 'Wrong message format',
+      message,
     });
 
-  socket.on('publish', (subject, payload) => {
-    if (typeof subject !== 'string') {
-      failSubject(subject);
-    } else if (payload !== undefined) {
-      nc.publish(subject, { ...fingerprint, payload });
-    } else {
-      nc.publish(subject, fingerprint);
-    }
+    reply({
+      ok: false,
+      error: {
+        message: 'Wrong message format',
+        givenMessage: message,
+      },
+    });
+  };
+
+  socket.on('message', (message, reply) => {
+    if (!message) sendWrongMessageFormat(message);
+    else if (typeof message === 'string') {
+      sendMessage(message, clientData, reply);
+    } else if (
+      typeof message === 'object' &&
+      typeof message.subject === 'string' &&
+      message.subject
+    ) {
+      sendMessage(
+        message.subject,
+        { ...clientData, payload: message.payload },
+        reply,
+      );
+    } else sendWrongMessageFormat(message);
   });
 
-  socket.on('request', (subject, arg0, arg1) => {
-    if (typeof subject !== 'string') {
-      failSubject(subject);
-    } else if (typeof arg1 === 'function') {
-      nc.requestOne(subject, { ...fingerprint, payload: arg0 }, arg1);
-    } else if (typeof arg0 === 'function') {
-      nc.requestOne(subject, fingerprint, arg1);
-    } else {
-      nc.publish('web client / no reply callback', fingerprint);
-    }
-  });
-
-  const personalSubject = `to client ${socket.id} / *`;
+  const personalSubject = `to web client ${socket.id} / *`;
   const personalMessages = nc.subscribe(
     personalSubject,
     (payload, replySubject, rawSubject) => {
@@ -83,7 +76,7 @@ io.on('connection', socket => {
       if (replySubject) {
         socket.emit(subject, payload, responsePayload =>
           nc.publish(replySubject, {
-            ...fingerprint,
+            ...clientData,
             payload: responsePayload,
           }),
         );
@@ -94,9 +87,38 @@ io.on('connection', socket => {
   );
 
   socket.on('disconnect', () => {
-    nc.publish('web client / disconnect', fingerprint);
+    nc.publish(
+      `web client ${clientData.webSocketId} / disconnected`,
+      clientData,
+    );
     nc.unsubscribe(personalMessages);
   });
 });
 
-io.listen(WS_PORT);
+io.listen(80);
+
+const parseCookies = header =>
+  header
+    ? header.split(';').reduce((acc, entry) => {
+        const [key, value] = entry.trim().split('=');
+        acc[key] = value;
+        return acc;
+      }, {})
+    : {};
+
+const sendMessage = (subject, body, reply) => {
+  const natsSubject = `from web client ${body.webSocketId} / ${subject}`;
+
+  if (typeof reply === 'function') {
+    nc.requestOne(natsSubject, body, message =>
+      reply(
+        message &&
+          (message.ok === true || (message.ok === false && message.error))
+          ? message
+          : { ok: true, result: message },
+      ),
+    );
+  } else {
+    nc.publish(natsSubject, body);
+  }
+};
