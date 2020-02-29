@@ -31,15 +31,15 @@ services:
 
 ## Environment variables
 
-| Name            | Default value | Description                         |
-|-----------------|---------------|-------------------------------------|
-| `NATS_HOSTNAME` | `localhost`   | NATS server hostname                |
-| `NATS_PORT`     | `4222`        | NATS server port                    |
-| `NATS_USER`     |               | NATS user                           |
-| `NATS_PASSWORD` |               | NATS password                       |
-| `NATS_TOKEN`    |               | NATS connection authorization token |
-| `WS_PATH`       | `/socket.io`  | Name of the path to capture WS      |
-| `WS_ORIGINS`    | `*`           | The allowed origins                 |
+| Name            | Default value | Description                                |
+|-----------------|---------------|--------------------------------------------|
+| `NATS_HOSTNAME` | `localhost`   | NATS server hostname                       |
+| `NATS_PORT`     | `4222`        | NATS server port                           |
+| `NATS_USER`     |               | NATS user                                  |
+| `NATS_PASSWORD` |               | NATS password                              |
+| `NATS_TOKEN`    |               | NATS connection authorization token        |
+| `WS_PATH`       | `/socket.io`  | Name of the path to capture WS             |
+| `WS_ORIGINS`    | `*`           | [Access-Control-Allow-Origin] header value |
 
 ## Events
 
@@ -75,3 +75,4 @@ All of NATS incoming messages have data object JSON with properties:
 
 [NATS]: https://nats.io
 [socket.io]: https://socket.io
+[Access-Control-Allow-Origin]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Origin
