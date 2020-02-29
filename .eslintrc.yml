@@ -16,6 +16,4 @@ rules:
   prettier/prettier:
     - error
 
-  import/no-mutable-exports: error
-  import/no-default-export: error
-  import/first: error
+  no-use-before-define: off
