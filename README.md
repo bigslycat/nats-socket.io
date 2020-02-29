@@ -48,7 +48,7 @@ services:
 All of NATS incoming messages have data object JSON with properties:
 
 - `headers` — headers of WS client connection.
-- `cookies` - cookies of WS client connection.
+- `cookies` — cookies of WS client connection.
 - `webSocketId` — unique id of WS client connection.
 
 #### NATS incoming messages list
