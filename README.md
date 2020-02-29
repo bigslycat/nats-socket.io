@@ -65,7 +65,7 @@ All of NATS incoming messages have data object JSON with properties:
 
 - `to web client <webSocketId> / <Socket.io event name>` — forwards to Socket.io connection as `<Socket.io event name>`.
 
-### Outgoing Socket.io messages
+### Socket.io outgoing messages
 
 - `message` — send message to NATS. Arguments:
   1. `string | Object`, required — message subject or object with properties:
