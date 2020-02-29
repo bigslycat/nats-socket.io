@@ -1,6 +1,6 @@
 # nats-socket.io
 
-[NATS] [socket.io] proxy
+[NATS] [Socket.io] proxy
 
 ## Usage
 
