@@ -41,17 +41,19 @@ io.on('connection', socket => {
       message,
     });
 
-    reply({
-      ok: false,
-      error: {
-        message: 'Wrong message format',
-        givenMessage: message,
-      },
-    });
+    if (typeof reply === 'function') {
+      reply({
+        ok: false,
+        error: {
+          message: 'Wrong message format',
+          givenMessage: message,
+        },
+      });
+    }
   };
 
   socket.on('message', (message, reply) => {
-    if (!message) sendWrongMessageFormat(message);
+    if (!message) sendWrongMessageFormat(message, reply);
     else if (typeof message === 'string') {
       sendMessage(message, clientData, reply);
     } else if (
@@ -64,7 +66,7 @@ io.on('connection', socket => {
         { ...clientData, payload: message.payload },
         reply,
       );
-    } else sendWrongMessageFormat(message);
+    } else sendWrongMessageFormat(message, reply);
   });
 
   const personalSubject = `to web client ${socket.id} / *`;
