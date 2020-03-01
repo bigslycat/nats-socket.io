@@ -1,6 +1,6 @@
 {
   "name": "nats-socket.io",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "NATS socket.io proxy",
   "main": "src/proxy.js",
   "repository": "https://github.com/bigslycat/nats-socket.io",
